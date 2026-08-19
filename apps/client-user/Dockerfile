@@ -15,6 +15,9 @@ COPY apps/client-user/ ./apps/client-user/
 # Install dependencies
 RUN pnpm install --frozen-lockfile
 
+# Generate protobuf TypeScript client code
+RUN pnpm --filter @chirp/proto run proto:generate
+
 # Generate TanStack Router route tree and build application
 RUN pnpm --filter @chirp/client-user run generate:routes
 RUN pnpm --filter @chirp/client-user run build
