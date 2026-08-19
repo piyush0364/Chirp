@@ -1,0 +1,52 @@
+language: 'python'
+layer: 'application'
+
+dependsOn:
+  - id: 'proto'
+
+tasks:
+  dev:
+    command: '.venv/bin/python -m chirp_api.main'
+    options:
+      persistent: true
+      runInCI: false
+      cache: false
+  start:
+    command: '.venv/bin/python -m chirp_api.main'
+    options:
+      persistent: true
+      runInCI: false
+      cache: false
+  test:
+    command: '.venv/bin/python -m pytest tests/ -v'
+    inputs:
+      - 'chirp_api/**/*.py'
+      - 'tests/**/*.py'
+      - 'pyproject.toml'
+    options:
+      mergeArgs: 'replace'
+  lint:
+    command: '.venv/bin/ruff check .'
+    inputs:
+      - 'chirp_api/**/*.py'
+      - 'tests/**/*.py'
+      - 'pyproject.toml'
+    options:
+      mergeArgs: 'replace'
+  typecheck:
+    command: '.venv/bin/mypy chirp_api'
+    inputs:
+      - 'chirp_api/**/*.py'
+      - 'pyproject.toml'
+    options:
+      mergeArgs: 'replace'
+  db-seed:
+    command: '.venv/bin/python -m chirp_api.db.seed'
+    options:
+      runInCI: false
+      cache: false
+  db-migrate:
+    command: '.venv/bin/python -m alembic upgrade head'
+    options:
+      runInCI: false
+      cache: false

@@ -1,0 +1,59 @@
+import { type ChirpClient, createChirpClient } from "@chirp/grpc-client";
+import { getAdminSessionData } from "./session.server";
+
+// gRPC API host
+const GRPC_HOST = process.env.GRPC_API_HOST || "localhost:50051";
+
+// Singleton gRPC client
+declare global {
+	// biome-ignore lint/style/noVar: global singleton
+	var __adminGrpcClient: ChirpClient | undefined;
+}
+
+/**
+ * Get or create the gRPC client singleton
+ */
+export function getGrpcClient(): ChirpClient {
+	if (!globalThis.__adminGrpcClient) {
+		globalThis.__adminGrpcClient = createChirpClient({
+			host: GRPC_HOST,
+			secure: process.env.NODE_ENV === "production",
+		});
+	}
+	return globalThis.__adminGrpcClient;
+}
+
+/**
+ * Gets the current admin session token for gRPC calls
+ * Returns undefined if user is not authenticated as admin/moderator
+ */
+export async function getAdminGrpcSessionToken(): Promise<string | undefined> {
+	const session = await getAdminSessionData();
+	if (!session) {
+		return undefined;
+	}
+	return session.sessionToken;
+}
+
+/**
+ * Gets a required admin session token, throws if not authenticated
+ */
+export async function requireAdminGrpcSessionToken(): Promise<string> {
+	const token = await getAdminGrpcSessionToken();
+	if (!token) {
+		throw new Error("Admin authentication required");
+	}
+	return token;
+}
+
+/**
+ * Helper to convert proto Timestamp to Date
+ */
+export function fromProtoTimestamp(
+	timestamp: { seconds: bigint; nanos: number } | undefined,
+): Date {
+	if (!timestamp) {
+		return new Date();
+	}
+	return new Date(Number(timestamp.seconds) * 1000 + Math.floor(timestamp.nanos / 1000000));
+}

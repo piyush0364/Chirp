@@ -1,0 +1,36 @@
+#!/usr/bin/env sh
+set -e
+
+# Fast pre-commit hook: validates only staged files
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM)
+
+if [ -z "$STAGED_FILES" ]; then
+  exit 0
+fi
+
+# Filter staged JS/TS/JSON files
+JS_STAGED=$(echo "$STAGED_FILES" | grep -E '\.(js|jsx|ts|tsx|json|jsonc)$' || true)
+
+# Filter staged Python files
+PY_STAGED=$(echo "$STAGED_FILES" | grep -E '\.py$' || true)
+
+# 1. Validate JS/TS/JSON files with Biome
+if [ -n "$JS_STAGED" ]; then
+  echo "🔍 [pre-commit] Checking staged JavaScript/TypeScript files with Biome..."
+  pnpm exec biome check --no-errors-on-unmatched $JS_STAGED
+fi
+
+# 2. Validate Python files with Ruff
+if [ -n "$PY_STAGED" ]; then
+  echo "🔍 [pre-commit] Checking staged Python files with Ruff..."
+  if [ -x "./apps/api/.venv/bin/ruff" ]; then
+    ./apps/api/.venv/bin/ruff check $PY_STAGED
+  elif command -v ruff >/dev/null 2>&1; then
+    ruff check $PY_STAGED
+  else
+    echo "⚠️ [pre-commit] Ruff not found in .venv or PATH, skipping python lint."
+  fi
+fi
+
+echo "✅ [pre-commit] All staged checks passed!"
+exit 0
