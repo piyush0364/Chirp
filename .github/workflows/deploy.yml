@@ -138,26 +138,51 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Retrieve ACR Credentials
+        id: acr-credentials
+        run: |
+          az acr update --name ${{ secrets.ACR_NAME }} --admin-enabled true
+          ACR_USERNAME=$(az acr credential show --name ${{ secrets.ACR_NAME }} --query "username" -o tsv)
+          ACR_PASSWORD=$(az acr credential show --name ${{ secrets.ACR_NAME }} --query "passwords[0].value" -o tsv)
+          echo "username=$ACR_USERNAME" >> $GITHUB_OUTPUT
+          echo "::add-mask::$ACR_PASSWORD"
+          echo "password=$ACR_PASSWORD" >> $GITHUB_OUTPUT
+
       - name: Deploy API to Azure Container Apps
         uses: azure/container-apps-deploy-action@v1
         with:
           acrName: ${{ secrets.ACR_NAME }}
+          acrUsername: ${{ steps.acr-credentials.outputs.username }}
+          acrPassword: ${{ steps.acr-credentials.outputs.password }}
           containerAppName: chirp-api
+          containerAppEnvironment: ${{ env.AZURE_CONTAINER_APP_ENV }}
           resourceGroup: ${{ env.AZURE_RESOURCE_GROUP }}
           imageToDeploy: ${{ secrets.ACR_NAME }}.azurecr.io/chirp-api:${{ github.sha }}
+          targetPort: 50051
+          ingress: internal
 
       - name: Deploy Client User to Azure Container Apps
         uses: azure/container-apps-deploy-action@v1
         with:
           acrName: ${{ secrets.ACR_NAME }}
+          acrUsername: ${{ steps.acr-credentials.outputs.username }}
+          acrPassword: ${{ steps.acr-credentials.outputs.password }}
           containerAppName: chirp-client-user
+          containerAppEnvironment: ${{ env.AZURE_CONTAINER_APP_ENV }}
           resourceGroup: ${{ env.AZURE_RESOURCE_GROUP }}
           imageToDeploy: ${{ secrets.ACR_NAME }}.azurecr.io/chirp-client-user:${{ github.sha }}
+          targetPort: 3000
+          ingress: external
 
       - name: Deploy Client Admin to Azure Container Apps
         uses: azure/container-apps-deploy-action@v1
         with:
           acrName: ${{ secrets.ACR_NAME }}
+          acrUsername: ${{ steps.acr-credentials.outputs.username }}
+          acrPassword: ${{ steps.acr-credentials.outputs.password }}
           containerAppName: chirp-client-admin
+          containerAppEnvironment: ${{ env.AZURE_CONTAINER_APP_ENV }}
           resourceGroup: ${{ env.AZURE_RESOURCE_GROUP }}
           imageToDeploy: ${{ secrets.ACR_NAME }}.azurecr.io/chirp-client-admin:${{ github.sha }}
+          targetPort: 3002
+          ingress: external
