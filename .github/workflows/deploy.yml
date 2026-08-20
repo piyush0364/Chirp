@@ -12,9 +12,9 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  AZURE_RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP || 'chirp-rg' }}
+  AZURE_RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP || 'chirp-sea-rg' }}
   AZURE_CONTAINER_APP_ENV: ${{ secrets.AZURE_CONTAINER_APP_ENV || 'chirp-aca-env' }}
-  ACR_NAME: ${{ secrets.ACR_NAME }}
+  ACR_NAME: ${{ secrets.ACR_NAME || 'chirpcr2092' }}
 
 jobs:
   validate:
